@@ -19,3 +19,5 @@ tensorflow-hub==0.13.0
 missingno
 plotly
 fuzzywuzzy
+datasets
+evaluate
