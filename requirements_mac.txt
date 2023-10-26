@@ -21,3 +21,11 @@ plotly
 fuzzywuzzy
 datasets
 evaluate
+torch 
+torchvision 
+torchaudio
+spacy
+spacy_langdetect
+pyspellchecker
+langdetect
+textblob
