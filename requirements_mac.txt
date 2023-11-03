@@ -36,3 +36,6 @@ datetime
 pathlib
 xgboost
 graphviz
+streamlit>=0.65
+streamlit-echarts
+streamlit_dynamic_filters
