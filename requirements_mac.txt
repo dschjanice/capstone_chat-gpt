@@ -26,7 +26,7 @@ torchvision
 torchaudio
 spacy
 spacy_langdetect
-pyspellchecker
+#pyspellchecker
 langdetect
 textblob
 vaderSentiment
@@ -39,3 +39,8 @@ graphviz
 streamlit>=0.65
 streamlit-echarts
 streamlit_dynamic_filters
+wordcloud
+bertopic
+snorkel
+spellchecker
+demoji
