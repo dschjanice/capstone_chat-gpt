@@ -3,6 +3,7 @@
 
 import streamlit as st
 from streamlit_dynamic_filters import DynamicFilters
+import streamlit.components.v1 as components
 import numpy as np
 import pandas as pd
 import pickle
@@ -34,34 +35,45 @@ df_raw = pd.read_csv("/Users/janice/Documents/Bootcamp/Git/Capstone/capstone_cha
 df_raw['appVersion'] = df_raw['appVersion'].replace(np.nan, "not available")
 df_raw["Operating System"] = np.where(df_raw.Source == 'Apple', "iOS", "Android")
 df_raw['at_dt'] = pd.to_datetime(df_raw['at'])
+df_raw['Stars'] = '⭐'
+df_raw['Stars'] = df_raw['Stars'] * df_raw['score'] 
 
-st.sidebar.write("Filter the shown data")
-df_source = df_raw
-df_app = df_raw
-if st.sidebar.toggle('Select iOS or Android Reviews'):
-    source = st.sidebar.selectbox("Filter here on the operating system", df_raw['Operating System'].sort_values().unique())
-    df_source = df_raw[df_raw['Operating System'].isin([source])]
-    df_app = df_source
-    if source == 'Android':
-        appversion = st.sidebar.multiselect(
-            "Filter here on the Android AppVersion", 
-            df_source['appVersion'].sort_values().unique(),
-            default=list(df_app['appVersion'].sort_values().unique()))
-        df_app = df_source[df_source['appVersion'].isin(appversion)]
+with st.sidebar:
+    st.write("Filter the shown data")
+    df_source = df_raw
+    df_app = df_raw
+    if st.toggle('Select iOS or Android Reviews'):
+        source = st.sidebar.selectbox("Filter here on the operating system", df_raw['Operating System'].sort_values().unique())
+        df_source = df_raw[df_raw['Operating System'].isin([source])]
+        df_app = df_source
+        if source == 'Android':
+            appversion = st.multiselect(
+                "Filter here on the Android AppVersion", 
+                df_source['appVersion'].sort_values().unique(),
+                default=list(df_app['appVersion'].sort_values().unique()))
+            df_app = df_source[df_source['appVersion'].isin(appversion)]
 
-category = st.sidebar.multiselect(
-    "Filter here on the Sentiment of the Review", 
-    df_app['category'].sort_values().unique(), 
-    default=list(df_app['category'].sort_values().unique()))
+    category = st.multiselect(
+        "Filter here on the Sentiment of the Review", 
+        df_app['category'].sort_values().unique(), 
+        default=list(df_app['category'].sort_values().unique()))
 
-review_date = st.sidebar.date_input(
-    "Review Date Range", 
-    (df_app['at_dt'].min(), 
-    df_app['at_dt'].max()),
-    key='#date_range',)
+    review_date = st.date_input(
+        "Review Date Range", 
+        (df_app['at_dt'].min(), 
+        df_app['at_dt'].max()),
+        key='#date_range',)
 
 df_cat = df_app[df_app['category'].isin(category)]
 df = df_cat.loc[(pd.to_datetime(df_cat['at']) >= pd.to_datetime(review_date[0])) & (pd.to_datetime(df_cat['at']) <= pd.to_datetime(review_date[1]))]
+
+if st.toggle('Show the topic overview'):
+    # Read file and keep in variable
+    with open("/Users/janice/Documents/Bootcamp/Git/Capstone/capstone_chat-gpt/charts/visualize_docs.html" ,'r') as f: 
+        html_data = f.read()
+
+    ## Show in webpage
+    components.html(html_data, height=800)
 
 ## Plots
 c1 = '#c0791b'
@@ -117,7 +129,7 @@ with col1_2:
     if st.checkbox(f'Push this button to show sample dataframe.'): # {appversion}'):
         st.write(df[['Source', 'content', 'category', 'Label']].sample(10))
     
-### line charts ###
+# ### line charts ###
 col2_1, col2_2= st.columns(2)
 default_var = ['category']
 with col2_1:
@@ -234,4 +246,40 @@ with col4_1:
     st.pyplot(fig)
 with col4_2:
     st.write(f'**Here you can see some example sentences for the topic.**')
-    st.write(df[['content', 'category']].sample(9))
+    st.dataframe(df[['content', 'category', 'Stars', 'thumbsUpCount']].sort_values('thumbsUpCount', ascending=False).head(9), 
+                 use_container_width=True,
+                 column_config={
+                 "score": st.column_config.NumberColumn(
+                 "Stars",
+                 help="Number of stars for the app",
+                 format="%d ⭐")},
+                 hide_index=True)
+    
+col5_1, col5_2 = st.columns(2)
+with col5_1:
+    st.write(f'**Top 5 Most Popular Positive Example**')
+    col5_1_1, col5_1_2 = st.columns(2)
+    with col5_1_1:
+        st.dataframe(df[df['category'] == "positive"].groupby('Label')['thumbsUpCount'].sum().reset_index().sort_values('thumbsUpCount', ascending=False)[['Label', 'thumbsUpCount']].head(5),
+                use_container_width=True,
+                column_config={
+                 "Label": st.column_config.Column(
+                 "Most Popular Positive")},
+                hide_index=True)
+    with col5_1_2:
+        st.dataframe(df[df['category'] == "negative"].groupby('Label')['thumbsUpCount'].sum().reset_index().sort_values('thumbsUpCount', ascending=False)[['Label', 'thumbsUpCount']].head(5),
+                use_container_width=True,
+                column_config={
+                 "Label": st.column_config.Column(
+                 "Most Popular Negative")},
+                hide_index=True)
+    st.dataframe(df[df['category'] == "positive"].sort_values('thumbsUpCount', ascending=False)[['content']].head(5), 
+                 use_container_width=True,
+                 hide_index=True)
+        
+with col5_2:
+    st.write(f'**Top 5 Most Popular Negative Examples**')
+    st.dataframe(df[df['category'] == "negative"].sort_values('thumbsUpCount', ascending=False)[['content']].head(5), 
+                 use_container_width=True,
+                 hide_index=True)
+
